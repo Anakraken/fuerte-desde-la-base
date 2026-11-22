@@ -1,12 +1,6 @@
 import { useEffect, useId, useState } from 'react';
-import {
-  EVENT,
-  MP_LINK_MIEMBRA,
-  MP_LINK_EXTERNA,
-  WHATSAPP_NUMBER,
-  PRIVACY_URL,
-} from '../config.js';
-import { isValidMemberCode, makeFolio, sendRegistration, isEmail, onlyDigits } from '../lib.js';
+import { EVENT, WHATSAPP_NUMBER, PRIVACY_URL } from '../config.js';
+import { verifyMemberCode, register, isEmail, onlyDigits } from '../lib.js';
 
 const STORAGE_KEY = 'fdb-registro';
 const DISCIPLINAS = ['CrossFit', 'Powerlifting', 'Halterofilia', 'Hyrox', 'Soy coach', 'Otro'];
@@ -16,7 +10,7 @@ const empty = {
   whatsapp: '',
   email: '',
   disciplina: '',
-  tipo: '', // 'miembra' | 'externa'
+  tipo: '', // 'miembro' | 'externo'
   codigo: '',
   privacidad: false,
 };
@@ -65,12 +59,17 @@ export default function RegistrationForm() {
   const checkCode = async () => {
     if (!v.codigo.trim()) return false;
     setCodeStatus('checking');
-    const ok = await isValidMemberCode(v.codigo);
-    setCodeStatus(ok ? 'ok' : 'bad');
-    return ok;
+    try {
+      const ok = await verifyMemberCode(v.codigo);
+      setCodeStatus(ok ? 'ok' : 'bad');
+      return ok;
+    } catch {
+      setCodeStatus('idle');
+      return null; // sin conexión: lo valida el servidor al enviar
+    }
   };
 
-  const isMember = v.tipo === 'miembra';
+  const isMember = v.tipo === 'miembro';
   const price = isMember ? EVENT.priceMember : EVENT.priceExternal;
 
   const validate = async () => {
@@ -81,7 +80,7 @@ export default function RegistrationForm() {
     if (!v.tipo) e.tipo = 'Elige una opción.';
     if (isMember) {
       if (!v.codigo.trim()) e.codigo = 'Escribe el código que te dieron en Cupra.';
-      else if (!(await checkCode()))
+      else if ((await checkCode()) === false)
         e.codigo = 'Ese código no es válido. Pídelo en recepción de Cupra o regístrate como externo.';
     }
     if (!v.privacidad) e.privacidad = 'Necesitamos tu autorización para registrarte.';
@@ -99,20 +98,29 @@ export default function RegistrationForm() {
       return;
     }
     setSending(true);
-    const folio = makeFolio();
     const payload = {
-      folio,
-      fecha: new Date().toISOString(),
       nombre: v.nombre.trim(),
       whatsapp: onlyDigits(v.whatsapp),
       email: v.email.trim().toLowerCase(),
       disciplina: v.disciplina,
-      tipo: isMember ? 'Miembro Cupra' : 'Externo',
-      monto: price,
+      tipo: v.tipo,
+      codigo: isMember ? v.codigo : '',
     };
     try {
-      await sendRegistration(payload);
-      const result = { folio, nombre: payload.nombre, tipo: v.tipo, monto: price };
+      const res = await register(payload);
+      if (!res.ok) {
+        if (res.error === 'codigo') {
+          setCodeStatus('bad');
+          setErrors({ codigo: 'Ese código no es válido. Pídelo en recepción de Cupra o regístrate como externo.' });
+          document.getElementById(`${uid}-codigo`)?.focus();
+        } else if (res.error === 'datos') {
+          setErrors({ form: 'Revisa tu nombre, WhatsApp y correo e inténtalo de nuevo.' });
+        } else {
+          setErrors({ form: 'No pudimos guardar tu registro. Inténtalo de nuevo en unos minutos.' });
+        }
+        return;
+      }
+      const result = { folio: res.folio, nombre: payload.nombre, tipo: res.tipo, monto: res.monto, payLink: res.payLink };
       try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(result)); } catch {}
       setDone(result);
       requestAnimationFrame(() =>
@@ -126,7 +134,7 @@ export default function RegistrationForm() {
   };
 
   if (done) {
-    const payLink = done.tipo === 'miembra' ? MP_LINK_MIEMBRA : MP_LINK_EXTERNA;
+    const payLink = done.payLink;
     const waText = encodeURIComponent(
       `Hola, ya pagué mi lugar para "${EVENT.name}". Folio ${done.folio} · ${done.nombre} · $${done.monto} MXN. Te comparto mi comprobante.`
     );
@@ -215,13 +223,13 @@ export default function RegistrationForm() {
       <fieldset className={'field' + (errors.tipo ? ' field--error' : '')} aria-describedby={errors.tipo ? id('tipo') + '-err' : undefined}>
         <legend className="field__label">¿Eres miembro activo de CrossFit Cupra?</legend>
         <div className="options">
-          <label className={'option option--pink' + (v.tipo === 'miembra' ? ' is-checked' : '')}>
-            <input id={id('tipo')} type="radio" name="tipo" value="miembra" checked={v.tipo === 'miembra'} onChange={set('tipo')} />
+          <label className={'option option--pink' + (v.tipo === 'miembro' ? ' is-checked' : '')}>
+            <input id={id('tipo')} type="radio" name="tipo" value="miembro" checked={v.tipo === 'miembro'} onChange={set('tipo')} />
             <span className="option__title">Sí, soy miembro activo</span>
             <span className="option__price">${EVENT.priceMember} MXN</span>
           </label>
-          <label className={'option option--orange' + (v.tipo === 'externa' ? ' is-checked' : '')}>
-            <input type="radio" name="tipo" value="externa" checked={v.tipo === 'externa'} onChange={set('tipo')} />
+          <label className={'option option--orange' + (v.tipo === 'externo' ? ' is-checked' : '')}>
+            <input type="radio" name="tipo" value="externo" checked={v.tipo === 'externo'} onChange={set('tipo')} />
             <span className="option__title">No, vengo de fuera</span>
             <span className="option__price">${EVENT.priceExternal} MXN</span>
           </label>

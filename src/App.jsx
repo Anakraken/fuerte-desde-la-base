@@ -38,12 +38,12 @@ export default function App() {
         <div className="hero__photo-wrap">
           <img
             className="hero__photo"
-            src="/anakaren-gym.jpg"
+            src={`${import.meta.env.BASE_URL}anakaren-gym.jpg`}
             alt="Anakaren estirando con una barra en el gimnasio"
             width="1485"
             height="992"
           />
-          <img className="hero__logo" src="/logo-cupra.png" alt="CrossFit Cupra" width="88" height="88" />
+          <img className="hero__logo" src={`${import.meta.env.BASE_URL}logo-cupra.png`} alt="CrossFit Cupra" width="88" height="88" />
           <span className="pill pill--yellow hero__tag">Taller presencial</span>
         </div>
 
@@ -143,7 +143,7 @@ export default function App() {
       <section className="section" aria-labelledby="imparte-t">
         <div className="container">
           <div className="coach">
-            <img className="coach__photo" src="/anakaren-retrato.jpg" alt="Anakaren R. Tamayo" width="160" height="160" />
+            <img className="coach__photo" src={`${import.meta.env.BASE_URL}anakaren-retrato.jpg`} alt="Anakaren R. Tamayo" width="160" height="160" />
             <div>
               <h2 id="imparte-t" className="coach__kicker">Imparte</h2>
               <p className="coach__name">{EVENT.instructor}</p>
@@ -163,7 +163,7 @@ export default function App() {
 
       <footer className="footer">
         <div className="container footer__inner">
-          <img src="/logo-cupra.png" alt="CrossFit Cupra" width="56" height="56" />
+          <img src={`${import.meta.env.BASE_URL}logo-cupra.png`} alt="CrossFit Cupra" width="56" height="56" />
           <p>
             {EVENT.name} · {EVENT.dateLong} · {EVENT.place}, Mérida
           </p>

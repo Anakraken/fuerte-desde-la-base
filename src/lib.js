@@ -1,38 +1,34 @@
-import { MEMBER_CODE_HASH, APPS_SCRIPT_URL } from './config.js';
+import { APPS_SCRIPT_URL } from './config.js';
 
-export async function sha256Hex(text) {
-  const data = new TextEncoder().encode(text);
-  const buf = await crypto.subtle.digest('SHA-256', data);
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-export async function isValidMemberCode(code) {
-  if (!code || !code.trim()) return false;
-  const hash = await sha256Hex('fuerte-desde-la-base:' + code.trim().toLowerCase());
-  return hash === MEMBER_CODE_HASH;
-}
-
-export function makeFolio() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return 'FDB-' + s;
-}
-
-// Apps Script no devuelve CORS, por eso se envía como text/plain en modo no-cors.
-// El registro llega a la hoja aunque el navegador no pueda leer la respuesta.
-export async function sendRegistration(payload) {
+// Llama al Apps Script. Se envía como text/plain para evitar el "preflight" de CORS;
+// Apps Script responde JSON y el navegador sí puede leerlo.
+async function callScript(payload) {
   if (!APPS_SCRIPT_URL) {
-    console.warn('[Modo prueba] APPS_SCRIPT_URL vacío. Registro no enviado:', payload);
-    await new Promise((r) => setTimeout(r, 600));
-    return;
+    // Modo prueba (sin Apps Script): simula respuestas.
+    console.warn('[Modo prueba] APPS_SCRIPT_URL vacío.', payload);
+    await new Promise((r) => setTimeout(r, 500));
+    if (payload.action === 'verificar') return { ok: true, valido: payload.codigo?.trim().toLowerCase() === 'prueba' };
+    const miembro = payload.tipo === 'miembro';
+    if (miembro && payload.codigo?.trim().toLowerCase() !== 'prueba') return { ok: false, error: 'codigo' };
+    return { ok: true, folio: 'FDB-PRUEB', monto: miembro ? 200 : 300, tipo: payload.tipo, payLink: '#modo-prueba' };
   }
-  await fetch(APPS_SCRIPT_URL, {
+  const res = await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
   });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+export async function verifyMemberCode(codigo) {
+  if (!codigo || !codigo.trim()) return false;
+  const r = await callScript({ action: 'verificar', codigo });
+  return !!r.valido;
+}
+
+export function register(data) {
+  return callScript({ action: 'registrar', ...data });
 }
 
 export const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
