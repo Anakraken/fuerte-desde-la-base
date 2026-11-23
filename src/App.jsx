@@ -156,7 +156,6 @@ export default function App() {
       <section id="registro" className="section section--blue" aria-labelledby="registro-t" ref={formRef}>
         <div className="container container--narrow">
           <h2 id="registro-t" className="section__title">Reserva tu lugar</h2>
-          <p className="section__lead">Dos pasos: te registras aquí y pagas con Mercado Pago.</p>
           <RegistrationForm />
         </div>
       </section>
