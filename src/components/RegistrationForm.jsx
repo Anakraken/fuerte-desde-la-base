@@ -196,7 +196,7 @@ export default function RegistrationForm() {
         />
       </Field>
 
-      <Field id={id('whatsapp')} label="WhatsApp" error={errors.whatsapp} hint="10 dígitos. Por aquí te mandamos el horario.">
+      <Field id={id('whatsapp')} label="WhatsApp" error={errors.whatsapp} hint="10 dígitos.">
         <input
           id={id('whatsapp')} className="input" type="tel" inputMode="numeric" autoComplete="tel-national"
           placeholder="999 123 4567"
