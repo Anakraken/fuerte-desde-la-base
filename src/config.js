@@ -5,7 +5,7 @@
 // 1) URL de tu Apps Script publicado como "Aplicación web"
 //    (ver apps-script/README en este proyecto). Vacío = modo prueba:
 //    el formulario no envía nada, solo lo muestra en la consola.
-export const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4r4bqasNZp9IBXQVLeYitTyIRDRLOwC8LaEKQeDZaocfnFPsSYuraunQFhRQaUx4i/exec';
+export const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpDRGhJTOHjmh5l2FzzR7v9meb1aT0NmkzSHfA1dXvnkhyTv8yzNkuhh83L4wle3vM/exec';
 
 // 2) Los links de Mercado Pago y el código de miembro YA NO van aquí:
 //    viven en las "Propiedades del script" de tu Apps Script (ver README).
